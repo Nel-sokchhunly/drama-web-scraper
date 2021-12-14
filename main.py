@@ -163,7 +163,7 @@ def job():
                 drama_list_col.insert_one(drama)
 
 
-schedule.every(2).hour.do(job)
+schedule.every().hour.do(job)
 
 while True:
     schedule.run_pending()
