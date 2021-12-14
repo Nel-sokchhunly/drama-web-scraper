@@ -1,7 +1,6 @@
 from bs4 import BeautifulSoup
 import requests
 import re
-import pprint
 from pymongo import MongoClient
 import schedule
 import time
@@ -107,7 +106,7 @@ def scrape_drama_info(drama_title):
             drama_information['other_name'].append(a_tag['title'].strip())
 
         return drama_information
-    except Exception as e:
+    except Exception:
         return None
 
 
