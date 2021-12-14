@@ -3,6 +3,8 @@ import requests
 import re
 import pprint
 from pymongo import MongoClient
+import schedule
+import time
 
 # dramacool
 base_url = 'https://www2.dramacool.sk/'
@@ -109,8 +111,7 @@ def scrape_drama_info(drama_title):
         return None
 
 
-if __name__ == '__main__':
-    pprint = pprint.PrettyPrinter(indent=4, compact=True).pprint
+def job():
     # connecting database
     client = MongoClient(
         "mongodb+srv://admin:123@cluster0.smkuq.mongodb.net/myFirstDatabase?retryWrites=true&w=majority")
@@ -142,18 +143,26 @@ if __name__ == '__main__':
     # getting the list of drama that stored in the database to validate
     # either the scraped drama has already exist in the database
     drama_names = list(map(lambda x: x['title'], drama_stored_in_database))
-    print('Adding new scrape data into the database...')
-    for drama in scraped_drama:
-        # checking if the drama already exist in the database
-        # if so, just update the document instead of adding a new one
-        if drama['title'] in drama_names:
-            drama_list_col.update_one(
-                {'title': drama['title']},
-                {'$set': {
-                    'episodes': drama['episodes']
-                }}
-            )
-        # this line mean the drama doesn't exist in the database
-        # then we add it as a new document
-        else:
-            drama_list_col.insert_one(drama)
+    if len(scraped_drama) > 0:
+        print('Adding new scrape data into the database...')
+        for drama in scraped_drama:
+            # checking if the drama already exist in the database
+            # if so, just update the document instead of adding a new one
+            if drama['title'] in drama_names:
+                drama_list_col.update_one(
+                    {'title': drama['title']},
+                    {'$set': {
+                        'episodes': drama['episodes']
+                    }}
+                )
+            # this line mean the drama doesn't exist in the database
+            # then we add it as a new document
+            else:
+                drama_list_col.insert_one(drama)
+
+
+schedule.every(2).hour.do(job)
+
+while True:
+    schedule.run_pending()
+    time.sleep(1)
