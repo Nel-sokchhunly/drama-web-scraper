@@ -4,6 +4,7 @@ import re
 from pymongo import MongoClient
 import schedule
 import time
+from datetime import datetime
 
 # dramacool
 base_url = 'https://www2.dramacool.sk/'
@@ -36,7 +37,8 @@ def scrape_drama_info(drama_title):
             'status': '',
             'genre': [],
             'trailer_embed_link': '',
-            'episodes': []
+            'episodes': [],
+            'last-updated': datetime.now()
         }
 
         html_file = requests.get(f'{drama_detail_base_url}{drama_title}').text
@@ -151,7 +153,8 @@ def job():
                 drama_list_col.update_one(
                     {'title': drama['title']},
                     {'$set': {
-                        'episodes': drama['episodes']
+                        'episodes': drama['episodes'],
+                        'last-updated': drama['last-updated']
                     }}
                 )
             # this line mean the drama doesn't exist in the database
