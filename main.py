@@ -43,7 +43,7 @@ def scrape_drama_info(drama_title):
             'genre': [],
             'trailer_embed_link': '',
             'episodes': [],
-            'last-updated': datetime.now()
+            'last_updated': datetime.now()
         }
 
         html_file = requests.get(f'{drama_detail_base_url}{drama_title}').text
@@ -159,7 +159,7 @@ def job():
                     {'title': drama['title']},
                     {'$set': {
                         'episodes': drama['episodes'],
-                        'last-updated': drama['last-updated']
+                        'last_updated': drama['last_updated']
                     }}
                 )
                 # this line mean the drama doesn't exist in the database
@@ -168,6 +168,8 @@ def job():
                 drama_list_col.insert_one(drama)
 
 
+# TODO: create a job to run through the stored drama list and delete
+#       those that doesn't have in the drama-list in the user documents
 schedule.every().hour.do(job)
 
 while True:
