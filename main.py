@@ -5,6 +5,10 @@ from pymongo import MongoClient
 import schedule
 import time
 from datetime import datetime
+from dotenv import load_dotenv
+import os
+
+load_dotenv()
 
 # dramacool
 base_url = 'https://www2.dramacool.sk/'
@@ -17,6 +21,7 @@ def scrape_drama_info(drama_title):
     this functions uses to fetch the drama information from the dramacool website.
 
     :param drama_title:String = it is the title query of the drama that will be fetch
+    
     :return:    title:String = the official title of the drama
     :return:    query_title:String = the query title to use for link
     :return:    other_name:List<String> = list contains other alternative names of the drama
@@ -115,7 +120,7 @@ def scrape_drama_info(drama_title):
 def job():
     # connecting database
     client = MongoClient(
-        "mongodb+srv://admin:123@cluster0.smkuq.mongodb.net/myFirstDatabase?retryWrites=true&w=majority")
+        f'mongodb+srv://admin:{os.environ.get("DB_PASSWORD")}@cluster0.smkuq.mongodb.net/myFirstDatabase?retryWrites=true&w=majority')
     db = client['drama-list']
     user_object_docs = db['user-drama-list'].find()  # get all document inside the user-drama-list collection
     drama_list_col = db['drama']
@@ -157,8 +162,8 @@ def job():
                         'last-updated': drama['last-updated']
                     }}
                 )
-            # this line mean the drama doesn't exist in the database
-            # then we add it as a new document
+                # this line mean the drama doesn't exist in the database
+                # then we add it as a new document
             else:
                 drama_list_col.insert_one(drama)
 
