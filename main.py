@@ -128,7 +128,7 @@ def job():
     print('Getting all the drama to scrape and adding it to the scrape list...')
     drama_list = set()
     for item in user_object_docs:
-        for drama in item['drama-list']:
+        for drama in item['drama_list']:
             drama_list.add(drama)
     print("Done inserting drama name into fetching list!")
 
