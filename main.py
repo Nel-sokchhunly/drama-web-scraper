@@ -11,7 +11,7 @@ import os
 load_dotenv()
 
 # dramacool
-base_url = 'https://www2.dramacool.sk/'
+base_url = 'https://www2.dramacool.sk'
 drama_detail_base_url = 'https://www2.dramacool.sk/drama-detail/'
 drama_search_base_url = 'https://www2.dramacool.sk/search?type=movies&keyword='
 
