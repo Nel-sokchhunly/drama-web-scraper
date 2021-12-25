@@ -170,7 +170,7 @@ def job():
 
 # TODO: create a job to run through the stored drama list and delete
 #       those that doesn't have in the drama-list in the user documents
-schedule.every(3).hour.do(job)
+schedule.every(3).hours.do(job)
 
 while True:
     schedule.run_pending()
