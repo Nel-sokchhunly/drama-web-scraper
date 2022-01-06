@@ -2,11 +2,11 @@ from bs4 import BeautifulSoup
 import requests
 import re
 from pymongo import MongoClient
-import schedule
-import time
 from datetime import datetime
 from dotenv import load_dotenv
 import os
+
+from pprint import pprint
 
 load_dotenv()
 
@@ -63,20 +63,19 @@ def scrape_drama_info(drama_title):
         # so each element inside the list represent a paragraph
         for element in drama_info:
             # description
-            if re.search(r'.+[.]$', element.get_text()):
+            if re.search(r'.+[.|?]$', element.get_text()):
                 drama_information['description'].append(element.text)
             # drama status and genre
             for text in element.stripped_strings:
                 clean_text = repr(text).lower()
-                if 'status' in clean_text:
-                    drama_information['status'] = drama_info[
-                        drama_info.index(element)].span.next_sibling.strip().replace(';', '')
-                if 'genre' in clean_text:
+                if 'status:' in clean_text:
+                    drama_information['status'] = drama_info[drama_info.index(element)].a.get_text()
+                if 'genre:' in clean_text:
                     genre_list_tag = drama_info[drama_info.index(element)].find_all('a')
                     for genre in genre_list_tag:
                         drama_information['genre'].append(genre.get_text())
 
-                # find all available episodes
+        # find all available episodes
         episodes_list_wrapper = drama_soup.find('ul', class_="list-episode-item-2 all-episode")
         episodes_list = episodes_list_wrapper.find_all('a', class_='img')
         for episode in episodes_list:
@@ -117,10 +116,10 @@ def scrape_drama_info(drama_title):
         return None
 
 
-def job():
+def main():
     # connecting database
     client = MongoClient(
-        f'mongodb+srv://admin:{os.environ.get("DB_PASSWORD")}@cluster0.smkuq.mongodb.net/myFirstDatabase?retryWrites=true&w=majority')
+        f'mongodb+srv://{os.environ.get("DB_USERNAME")}:{os.environ.get("DB_PASSWORD")}@cluster0.smkuq.mongodb.net/myFirstDatabase?retryWrites=true&w=majority')
     db = client['drama-list']
     user_object_docs = db['user-drama-list'].find()  # get all document inside the user-drama-list collection
     drama_list_col = db['drama']
@@ -132,16 +131,33 @@ def job():
             drama_list.add(drama)
     print("Done inserting drama name into fetching list!")
 
+    fetch_drama = drama_list_col.find({
+        'query_title': {"$in": list(drama_list)}
+    })
+
+    # a map storing the obj of the drama
+    # key => query_title
+    # value => obj of that drama
+    fetch_drama_status_dict = dict()
+    for drama in fetch_drama:
+        fetch_drama_status_dict[drama["query_title"]] = drama
+
     print("Executing the scarper function...")
     scraped_drama = []
     for drama in drama_list:
-        print(f'Scraping {drama}...')
-        data = scrape_drama_info(drama)
-        if data is not None:
-            scraped_drama.append(data)
-            print(f'Done scraping {drama}')
+        drama_obj = fetch_drama_status_dict[drama]
+        if drama_obj['status'].lower() == 'completed':
+            scraped_drama.append(drama_obj)
+            print(f'{drama} already completed')
         else:
-            print(f'Something goes wrong with scarping {drama}\nproceed to another drama')
+            print(f'Scraping {drama}...')
+
+            data = scrape_drama_info(drama)
+            if data is not None:
+                scraped_drama.append(data)
+                print(f'Done scraping {drama}')
+            else:
+                print(f'Something goes wrong with scarping {drama}\nproceed to another drama')
     print('Done scarping!')
 
     # adding new scraped data into the database
@@ -158,6 +174,7 @@ def job():
                 drama_list_col.update_one(
                     {'title': drama['title']},
                     {'$set': {
+                        'status': drama['status'],
                         'episodes': drama['episodes'],
                         'last_updated': drama['last_updated']
                     }}
@@ -168,10 +185,5 @@ def job():
                 drama_list_col.insert_one(drama)
 
 
-# TODO: create a job to run through the stored drama list and delete
-#       those that doesn't have in the drama-list in the user documents
-schedule.every().hour.do(job)
-
-while True:
-    schedule.run_pending()
-    time.sleep(1)
+if __name__ == "__main__":
+    main()
